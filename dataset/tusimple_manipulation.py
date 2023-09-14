@@ -5,7 +5,7 @@ import os.path
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt# read each line of json file
-json_gt = [json.loads(line) for line in open('./datasets/tusimple/TUSimple/train_set/label_data_0313.json')]
+json_gt = [json.loads(line) for line in open('../datasets/tusimple/TUSimple/train_set/label_data_0313.json')]
 gt = json_gt[100]
 gt_lanes = gt['lanes']
 
