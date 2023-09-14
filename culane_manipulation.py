@@ -30,15 +30,17 @@ def show_culane_sample(Dataset, idx):
     img = plt.imread(img_path)
     # plt.figure(figsize=(16, 18))
     # plt.imshow(img)  # showing row image.
-
+    # print(img_path)
     anno_path = img_path[:-3] + 'lines.txt'  # remove sufix jpg and add lines.txt
-
+    print(anno_path)
     exist_list = [] # contains [x, y] for all key points that belong to lanes in the image...all annotations.
     with open(anno_path) as f:
         for line in f:
             line = line.strip()
             l = line.split(" ")
+            # print(l)
             exist_list.append([int(eval(x)) for x in l[2:]])
+            # exist_list.append([x for x in l[2:]])
 
     print(exist_list)
 
