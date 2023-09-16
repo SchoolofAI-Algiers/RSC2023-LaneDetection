@@ -36,6 +36,7 @@ def show_targets(exist_list, img):
 #show a sample x from culane, (x ~ [0-3376] for testing dataset / x ~  [0-18232] for training dataset )
 def show_culane_sample(Dataset, idx):
     img_path = Dataset.__getitem__(idx)['img_name']
+    print(img_path)
     img = plt.imread(img_path)
     anno_path = img_path[:-3] + 'lines.txt'  # remove sufix jpg and add lines.txt
     exist_list = [] # contains [x, y] for all key points that belong to lanes in the image...all annotations.
@@ -51,7 +52,7 @@ def show_culane_sample(Dataset, idx):
 
 
 
-show_culane_sample(train_dataset, 1800)
+# show_culane_sample(train_dataset, 1800)
 # show_culane_sample(test_dataset, 1800)
 
 
