@@ -36,7 +36,7 @@ class CULane(Dataset):
 
     def createIndex_test(self):
         listfile = os.path.join(self.data_dir_path, "list", "{}.txt".format(self.image_set))
-        print(listfile)
+        # print(listfile)
         self.img_list = []
         with open(listfile) as f:
             for line in f:
