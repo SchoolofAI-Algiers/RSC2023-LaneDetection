@@ -4,9 +4,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import torchvision.transforms as transforms
-from dataset.culaneDataset import CULane
-from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
 
@@ -48,11 +45,11 @@ def normalize_convert_images_to_tensor(batch_images):
     batch_images = batch_images / 255  # normalized
 
     #TODO:  modify image size.
+    batch_images = torch.tensor(batch_images)
+    return batch_images
 
-    return torch.tensor(batch_images)
 
-
-def generate_batch_targets(batch_img_paths):
+def generate_batch_targets(batch_img_paths, BATCH_SIZE):
     # iterate over a batch, and aggregate all 8 image keypoints in one set.
     batch_targets = []
     for image_id in range(BATCH_SIZE):
@@ -70,17 +67,15 @@ def generate_batch_targets(batch_img_paths):
         batch_targets.append(img_keypoints)
 
     # checks - debugging
-    print(len(batch_targets))
-    for i in range(BATCH_SIZE):
-        print(len(batch_targets[i])) #....4
-        for j in range(4):
-            print(len(batch_targets[i][j]))#....50
-    print(batch_targets)
+    # print(len(batch_targets))
+    # for i in range(BATCH_SIZE):
+    #     print(len(batch_targets[i])) #....4
+    #     for j in range(4):
+    #         print(len(batch_targets[i][j]))#....50
+    # print(batch_targets)
 
     batch_targets = np.array(batch_targets, dtype=int)
     return torch.tensor(batch_targets)
-
-
 
 
 
@@ -90,33 +85,14 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #HyperParams
 
 learning_rate = 0.001
-NUM_EPOCHS = 1
-BATCH_SIZE = 8
 
-data_root = '/mnt/Travail/DLProjects/RSC/LaneRSC/datasets/culane'
-
-train_dataset = CULane(data_root, 'train') # train => N = 25 , test => 35
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=train_dataset.collate)
-#init model
-
-# resnet50 = torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_resnet50', pretrained=True)
-#  model = CNN().to(device)
-
-
-#Loss nd optimizer
-
-
-
-
-
-
-def train(model):
+def train(model, dataloader, BATCH_SIZE, NUM_EPOCHS = 1):
     #FIXME
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     # train a model
     for epoch in range(NUM_EPOCHS):
-        for batch_id, batch in enumerate(train_loader):
+        for batch_id, batch in enumerate(dataloader):
             #each batch is a CULANE_sample (a dict with a list of images, images_paths, that's all what we need from him. )
             # in one batch there are :
             # batch['img']: a list of 32 images(590x1640)
@@ -126,19 +102,23 @@ def train(model):
             # print(batch_images)
             batch_images = torch.movedim(batch_images, 1, -1)
             batch_images = torch.movedim(batch_images, 1, -1)
-            # batch_images = batch_images.resize()
-            #input of our model : ( 3, 590, 1640 )
-            print(batch_images.shape)  # (32, 3, 590, 1640)
-            print(batch['img_name'])
-            batch_targets = generate_batch_targets(batch['img_name'])
-            print(batch_targets.shape) # ouput of our model (32, 4, 50)
+            new_img_size = (300, 800)
+            batch_images = F.interpolate(batch_images, size=new_img_size, mode='bilinear', align_corners=False)
+            #input of our model : ( 3, 300, 800 )
+            print(batch_images.shape)  # (32, 3, 590, 1640) => (32, 3, 300, 800)
+            batch_targets = generate_batch_targets(batch['img_name'], BATCH_SIZE)
             # break
+            batch_targets= batch_targets.reshape(batch_targets.shape[0], -1)
+
+            print(batch_targets.shape)
+            # ouput of our model (32, 200)
+
             batch_images = batch_images.to(device=device)
             batch_targets = batch_targets.to(device=device)
 
             # print(batch_images)
             scores = model(batch_images.float())
-            print(scores.shape) #[32, 4, 50 ]?
+            print(scores.shape) #[32, 200]?
 
             loss = criterion(scores, batch_targets.float())
 
