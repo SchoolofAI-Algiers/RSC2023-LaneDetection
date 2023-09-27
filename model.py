@@ -1,5 +1,6 @@
 import cv2
-import torch.nn
+import torch
+from torch import nn
 import numpy as np
 from torchvision import transforms
 from train import train
@@ -10,18 +11,33 @@ from torch.utils.data import DataLoader
 class LaneRSC(torch.nn.Module):
     def __init__(self, N):
         super().__init__()
-        self.resnet50 = torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_resnet50', pretrained=True)
+        self.resnet152 = torch.hub.load('pytorch/vision:v0.10.0', 'resnet152', pretrained=True)
         # self.resnet50.conv1 = torch.nn.Conv2d(in_channels=3, out_channels=64, kernel_size=(3,3), stride=(1,1), padding=(1,1))
         # self.resnet50.bn1 = torch.nn.BatchNorm1d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        self.resnet50.fc = torch.nn.Linear(2048, 4*N*2) # 280 for testing cuz 4*N*2, nd N on testing is 35, on training is 25.
-        # print(self.resnet50.modules)
+        # self.resnet152.fc = torch.nn.Linear(2048, 4*N*2) # 280 for testing cuz 4*N*2, nd N on testing is 35, on training is 25.
+
+        #removing last layer from resnet152 (fc)
+        modules = list(self.resnet152.children())[:-1]
+        self.resnet152 = nn.Sequential(*modules)
+
+        # FPN.
+
+
+        # Add our custom fully connected network
+        self.custom_fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(2048, 4*N*2)
+        )
+        # print(self.resnet152.modules)
+
+        self.laneRSC = nn.Sequential(
+            self.resnet152,
+            self.custom_fc
+        )
+
 
     def forward(self, x):
-
-        return self.resnet50(x)
-
-
-
+        return self.laneRSC(x)
 
 
 
@@ -29,7 +45,7 @@ if __name__ == '__main__':
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     data_root = '/mnt/Travail/DLProjects/RSC/LaneRSC/datasets/culane'
-    BATCH_SIZE = 8
+    BATCH_SIZE = 7
     NUM_EPOCHS = 1
     N = 25
 
@@ -42,7 +58,7 @@ if __name__ == '__main__':
     train(model, train_loader, BATCH_SIZE, NUM_EPOCHS)
     #GG!
 
-    #
+    # # #
     # img_path = "/mnt/Travail/DLProjects/RSC/LaneRSC/datasets/culane/driver_161_90frame/06031610_0866.MP4/04410.jpg"
     # img = Image.open(img_path)
     # # img.show()
@@ -57,7 +73,6 @@ if __name__ == '__main__':
     #
     # features = features.unsqueeze(0)
     # print(features.shape)
-    #
     #
     # test  = model(features.to(device))
     # print(test.shape)
