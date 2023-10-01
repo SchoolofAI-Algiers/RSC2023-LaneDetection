@@ -25,6 +25,8 @@ def show_targets(exist_list, img):
 # represent 50 keypoitns au max.
 # @img_keypoints: a list of lists, each sublist represent a lane, initially each image
 # has its own structure for this set.
+
+
 def normalize_img_keypoints(img_keypoints):
     N = 25  # nombre de points maximal that represent a lane.
 
@@ -92,6 +94,8 @@ def train(model, dataloader, BATCH_SIZE, NUM_EPOCHS = 1):
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     # train a model
     for epoch in range(NUM_EPOCHS):
+        num_correct = 0
+        num_samples = 0
         for batch_id, batch in enumerate(dataloader):
             #each batch is a CULANE_sample (a dict with a list of images, images_paths, that's all what we need from him. )
             # in one batch there are :
@@ -105,12 +109,11 @@ def train(model, dataloader, BATCH_SIZE, NUM_EPOCHS = 1):
             new_img_size = (300, 800)
             batch_images = F.interpolate(batch_images, size=new_img_size, mode='bilinear', align_corners=False)
                 #input of our model : ( 3, 300, 800 )
-            print(batch_images.shape)  # (32, 3, 590, 1640) => (32, 3, 300, 800)
+            # print(batch_images.shape)  # (32, 3, 590, 1640) => (32, 3, 300, 800)
             batch_targets = generate_batch_targets(batch['img_name'], BATCH_SIZE)
             # break
             batch_targets= batch_targets.reshape(batch_targets.shape[0], -1)
-
-            print(batch_targets.shape)
+            # print('y target: '+str(batch_targets.shape))
             # ouput of our model (32, 200)
 
             batch_images = batch_images.to(device=device)
@@ -118,10 +121,18 @@ def train(model, dataloader, BATCH_SIZE, NUM_EPOCHS = 1):
 
             # print(batch_images)
             scores = model(batch_images.float())
-            print(scores.shape) #[32, 200]?
+            # print('scores: '+str(scores.shape)) #[32, 200]?
 
             loss = criterion(scores, batch_targets.float())
+            #MAX OF ITRATTION IN TRAINING = 18000/ batch_size(7) = 2572
+            print(f'----------in iteration : {batch_id}---------------- ')
+            print("Loss :"+str(loss))
 
+            num_correct += (scores == batch_targets).sum()
+            num_samples += batch_targets.size(0)
+
+            print(f'Got {num_correct} / {num_samples} with accuracy {float(num_correct) / float(num_samples) * 100:.2f}')
+            print('------------------')
             # backward
             optimizer.zero_grad()
             loss.backward()
