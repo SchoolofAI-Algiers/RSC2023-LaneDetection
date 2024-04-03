@@ -89,7 +89,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 learning_rate = 0.001
 
 def train(model, dataloader, BATCH_SIZE, NUM_EPOCHS = 1):
-    #FIXME
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     # train a model
@@ -107,6 +106,7 @@ def train(model, dataloader, BATCH_SIZE, NUM_EPOCHS = 1):
             batch_images = torch.movedim(batch_images, 1, -1)
             batch_images = torch.movedim(batch_images, 1, -1)
             new_img_size = (300, 800)
+            # new_img_size = (224, 224)
             batch_images = F.interpolate(batch_images, size=new_img_size, mode='bilinear', align_corners=False)
                 #input of our model : ( 3, 300, 800 )
             # print(batch_images.shape)  # (32, 3, 590, 1640) => (32, 3, 300, 800)
